@@ -39,19 +39,20 @@ export enum AadEndpoints {
     legacy = "login.windows.net"
 }
 
+export const rootURL = "/OAS-API-Examples"
 export const hashSignOut = "signout";
-export const pageUrlSignIn = "/signin";
-export const pageUrlSignInSso = "/signinsso";
-export const pageUrlSignUp = "/signup";
-export const pageUrlSignUpOAuth = "/signup-oauth";
-export const pageUrlProfile = "/profile";
-export const pageUrlHome = "/";
-export const pageUrl404 = "/404";
-export const pageUrl500 = "/500";
-export const pageUrlChangePassword = "/change-password";
-export const pageUrlConfirmPassword = "/confirm-password";
-export const pageUrlResetPassword = "/reset-password";
-export const pageUrlReference = "/api-details";
+export const pageUrlSignIn = rootURL + "/signin";
+export const pageUrlSignInSso = rootURL + "/signinsso";
+export const pageUrlSignUp = rootURL + "/signup";
+export const pageUrlSignUpOAuth = rootURL + "/signup-oauth";
+export const pageUrlProfile = rootURL + "/profile";
+export const pageUrlHome = rootURL + "/";
+export const pageUrl404 = rootURL + "/404";
+export const pageUrl500 = rootURL + "/500";
+export const pageUrlChangePassword = rootURL + "/change-password";
+export const pageUrlConfirmPassword = rootURL + "/confirm-password";
+export const pageUrlResetPassword = rootURL + "/reset-password";
+export const pageUrlReference = rootURL + "/api-details";
 
 /**
  * Permalinks pointing to resources that cannot be added, modified or modified.
@@ -68,10 +69,10 @@ export const reservedPermalinks = [
     pageUrlChangePassword,
     pageUrlConfirmPassword,
     hashSignOut,
-    "/confirm-v2/identities/basic/signup",
-    "/confirm/invitation",
-    "/confirm-v2/password",
-    "/captcha"
+    rootURL + "/confirm-v2/identities/basic/signup",
+    rootURL + "/confirm/invitation",
+    rootURL + "/confirm-v2/password",
+    rootURL + "/captcha"
 ];
 
 /**
