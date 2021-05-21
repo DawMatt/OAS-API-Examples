@@ -39,7 +39,7 @@ export enum AadEndpoints {
     legacy = "login.windows.net"
 }
 
-export const rootURL = "/OAS-API-Examples"
+export const rootURL = "" // Add prefix here if required
 export const hashSignOut = "signout";
 export const pageUrlSignIn = rootURL + "/signin";
 export const pageUrlSignInSso = rootURL + "/signinsso";
