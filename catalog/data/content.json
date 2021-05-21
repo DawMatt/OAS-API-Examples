@@ -8,7 +8,7 @@
                     "description": "",
                     "keywords": "",
                     "contentKey": "files/f95c292b-b40b-e2cd-b5dc-71fffc97083d",
-                    "permalink": "/404"
+                    "permalink": "/OAS-API-Examples/404"
                 }
             }
         },
@@ -19,7 +19,7 @@
                     "title": "Home",
                     "description": "",
                     "keywords": "",
-                    "permalink": "/",
+                    "permalink": "/OAS-API-Examples/",
                     "contentKey": "files/e0987ca1-f458-b546-7697-7be594b35583"
                 }
             }
@@ -32,7 +32,7 @@
                     "description": "",
                     "keywords": "",
                     "contentKey": "files/1b2a9e4c-d53b-99d1-e363-348630d982b5",
-                    "permalink": "/api-details"
+                    "permalink": "/OAS-API-Examples/api-details"
                 }
             }
         },
@@ -44,7 +44,7 @@
                     "description": "",
                     "keywords": "",
                     "contentKey": "files/3bc2e097-114e-cd8d-dc51-4139bcbdb8c0",
-                    "permalink": "/500"
+                    "permalink": "/OAS-API-Examples/500"
                 }
             }
         }
