@@ -5,7 +5,6 @@ export const dataPathSettingName = "dataFilesPath";
 export const mediaPathSettingName = "dataFilesPath";
 export const openapiSpecsPathSettingName = "openapiSpecsPath";
 
-
 /**
  * APIM service SKU names.
  */
@@ -21,8 +20,19 @@ export enum ServiceSkuName {
  * Types of API.
  */
 export enum TypeOfApi {
+    webSocket = "websocket",
     soap = "soap",
     http = "http"
+}
+
+/**
+ * Types of body format.
+ */
+export enum RequestBodyType {
+    raw = "raw",
+    string = "string",
+    binary = "binary",
+    form = "form"
 }
 
 /**
@@ -39,20 +49,20 @@ export enum AadEndpoints {
     legacy = "login.windows.net"
 }
 
-export const rootURL = "" // Add prefix here if required
+export const closeAccount = "close-account";
 export const hashSignOut = "signout";
-export const pageUrlSignIn = rootURL + "/signin";
-export const pageUrlSignInSso = rootURL + "/signinsso";
-export const pageUrlSignUp = rootURL + "/signup";
-export const pageUrlSignUpOAuth = rootURL + "/signup-oauth";
-export const pageUrlProfile = rootURL + "/profile";
-export const pageUrlHome = rootURL + "/";
-export const pageUrl404 = rootURL + "/404";
-export const pageUrl500 = rootURL + "/500";
-export const pageUrlChangePassword = rootURL + "/change-password";
-export const pageUrlConfirmPassword = rootURL + "/confirm-password";
-export const pageUrlResetPassword = rootURL + "/reset-password";
-export const pageUrlReference = rootURL + "/api-details";
+export const pageUrlSignIn = "/signin";
+export const pageUrlSignInSso = "/signinsso";
+export const pageUrlSignUp = "/signup";
+export const pageUrlSignUpOAuth = "/signup-oauth";
+export const pageUrlProfile = "/profile";
+export const pageUrlHome = "/";
+export const pageUrl404 = "/404";
+export const pageUrl500 = "/500";
+export const pageUrlChangePassword = "/change-password";
+export const pageUrlConfirmPassword = "/confirm-password";
+export const pageUrlResetPassword = "/reset-password";
+export const pageUrlReference = "/api-details";
 
 /**
  * Permalinks pointing to resources that cannot be added, modified or modified.
@@ -69,10 +79,10 @@ export const reservedPermalinks = [
     pageUrlChangePassword,
     pageUrlConfirmPassword,
     hashSignOut,
-    rootURL + "/confirm-v2/identities/basic/signup",
-    rootURL + "/confirm/invitation",
-    rootURL + "/confirm-v2/password",
-    rootURL + "/captcha"
+    "/confirm-v2/identities/basic/signup",
+    "/confirm/invitation",
+    "/confirm-v2/password",
+    "/captcha"
 ];
 
 /**
@@ -96,7 +106,9 @@ export const AppType = "developerPortal";
 export enum SettingNames {
     backendUrl = "backendUrl",
     managementApiUrl = "managementApiUrl",
-    managementApiAccessToken = "managementApiAccessToken"
+    managementApiAccessToken = "managementApiAccessToken",
+    aadClientConfig = "aad",
+    aadB2CClientConfig = "aadB2C"
 }
 
 /**
@@ -120,10 +132,16 @@ export enum GrantTypes {
      * The Client Credentials grant type is used by clients to obtain an access token outside of
      * the context of a user.
      */
-    clientCredentials = "client_credentials"
+    clientCredentials = "client_credentials",
+
+    /**
+     * The Resource owner password grant type is used to exchange a username and password for an access
+     * token directly. 
+     */
+    password = "password"
 }
 
-export const managementApiVersion = "2019-12-01";
+export const managementApiVersion = "2021-01-01-preview";
 
 /**
  * Developer portal type (self-hosted or managed).
