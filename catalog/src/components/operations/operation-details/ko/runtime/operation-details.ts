@@ -5,7 +5,6 @@ import { Component, RuntimeComponent, OnMounted, OnDestroyed, Param } from "@pap
 import { Api } from "../../../../../models/api";
 import { Operation } from "../../../../../models/operation";
 import { ApiService } from "../../../../../services/apiService";
-import { TypeDefinitionPropertyTypeCombination } from "./../../../../../models/typeDefinition";
 import { AuthorizationServer } from "./../../../../../models/authorizationServer";
 import { Representation } from "./../../../../../models/representation";
 import { RouteHelper } from "../../../../../routing/routeHelper";
@@ -18,6 +17,7 @@ import {
     TypeDefinitionPropertyTypeArrayOfReference,
     TypeDefinitionPropertyTypeArrayOfPrimitive
 } from "../../../../../models/typeDefinition";
+// import { OAuthService } from "../../../../../services/oauthService";
 
 
 @RuntimeComponent({
@@ -46,6 +46,7 @@ export class OperationDetails {
 
     constructor(
         private readonly apiService: ApiService,
+        // private readonly oauthService: OAuthService,
         private readonly router: Router,
         private readonly routeHelper: RouteHelper
     ) {
@@ -64,25 +65,37 @@ export class OperationDetails {
         this.defaultSchemaView = ko.observable("table");
         this.useCorsProxy = ko.observable();
         this.requestUrlSample = ko.computed(() => {
-            if (!this.api() || !this.operation()) {
+
+            const api = this.api();
+            const hostname = this.sampleHostname() ?? null;
+
+            if ((!this.api() || !this.operation()) && api?.type !== TypeOfApi.graphQL) {
                 return null;
             }
 
-            const api = this.api();
             const operation = this.operation();
-            const hostname = this.sampleHostname();
 
             let operationPath = api.versionedPath;
 
-            if (api.type !== TypeOfApi.soap) {
+            if (api.type !== TypeOfApi.soap && api.type !== TypeOfApi.graphQL) {
                 operationPath += operation.displayUrlTemplate;
             }
 
-            if (api.type === TypeOfApi.webSocket) {
-                return `${hostname}${Utils.ensureLeadingSlash(operationPath)}`;
+            let requestUrl = "";
+
+            if (hostname && api.type !== TypeOfApi.webSocket) {
+                requestUrl = 'https://';
             }
 
-            return `https://${hostname}${Utils.ensureLeadingSlash(operationPath)}`;
+            if (hostname) requestUrl += hostname;
+
+            requestUrl += Utils.ensureLeadingSlash(operationPath);
+
+            if (api.apiVersion && api.apiVersionSet?.versioningScheme === "Query") {
+                return Utils.addQueryParameter(requestUrl, api.apiVersionSet.versionQueryName, api.apiVersion);
+            }
+
+            return requestUrl;
         });
         this.protocol = ko.computed(() => {
             const api = this.api();
@@ -104,9 +117,6 @@ export class OperationDetails {
 
     @Param()
     public enableScrollTo: boolean;
-
-    @Param()
-    public authorizationServers: AuthorizationServer[];
 
     @Param()
     public defaultSchemaView: ko.Observable<string>;
@@ -176,9 +186,8 @@ export class OperationDetails {
 
         let associatedAuthServer = null;
 
-        if (this.authorizationServers && associatedServerId) {
-            associatedAuthServer = this.authorizationServers
-                .find(x => x.name === associatedServerId);
+        if (associatedServerId) {
+            // associatedAuthServer = await this.oauthService.getAuthServer(api.authenticationSettings?.oAuth2?.authorizationServerId, api.authenticationSettings?.openid?.openidProviderId);
         }
 
         this.associatedAuthServer(associatedAuthServer);
@@ -269,10 +278,6 @@ export class OperationDetails {
                 || definition.type instanceof TypeDefinitionPropertyTypeArrayOfReference)) {
                 result.push(definition.type.name);
             }
-
-            if (definition.type instanceof TypeDefinitionPropertyTypeCombination) {
-                result.push(...definition.type.combination.map(x => x["name"]));
-            }
         });
 
         return result.filter(x => !skipNames.includes(x));
@@ -281,12 +286,10 @@ export class OperationDetails {
     public async loadGatewayInfo(apiName: string): Promise<void> {
         const hostnames = await this.apiService.getApiHostnames(apiName);
 
-        if (hostnames.length === 0) {
-            throw new Error(`Unable to fetch gateway hostnames.`);
+        if (hostnames.length !== 0) {
+            this.sampleHostname(hostnames[0]);
+            this.hostnames(hostnames);
         }
-
-        this.sampleHostname(hostnames[0]);
-        this.hostnames(hostnames);
     }
 
     private cleanSelection(): void {
@@ -308,7 +311,7 @@ export class OperationDetails {
 
         if (!definition) {
             // Fallback for the case when type is referenced, but not defined in schema.
-            return new TypeDefinition(representation.typeName, {});
+            return new TypeDefinition(representation.typeName, {}, this.definitions());
         }
 
         // Making copy to avoid overriding original properties.
@@ -316,11 +319,6 @@ export class OperationDetails {
 
         if (!definition.name) {
             definition.name = representation.typeName;
-        }
-
-        if (representation.example) {
-            definition.example = representation.example;
-            definition.exampleFormat = representation.exampleFormat;
         }
 
         return definition;

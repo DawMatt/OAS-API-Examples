@@ -1,7 +1,5 @@
 import * as ko from "knockout";
-import * as remark from "remark";
-import * as html from "remark-html";
-import * as truncateHtml from "truncate-html";
+import { MarkdownService } from "../services/markdownService";
 
 interface MarkdownConfig {
     /**
@@ -17,9 +15,10 @@ interface MarkdownConfig {
 
 
 ko.bindingHandlers["markdown"] = {
-    init: (element: HTMLElement, valueAccessor: () => string | MarkdownConfig): void => {
+    update: (element: HTMLElement, valueAccessor: () => string | MarkdownConfig): void => {
         const config = ko.unwrap(valueAccessor());
         const htmlObservable = ko.observable();
+        const markdownService = new MarkdownService();
 
         let markdown: string;
         let length: number;
@@ -38,11 +37,7 @@ ko.bindingHandlers["markdown"] = {
 
         ko.applyBindingsToNode(element, { html: htmlObservable }, null);
 
-        remark()
-            .use(html)
-            .process(markdown, (err: any, html: any) => {
-                html = truncateHtml.default(html, { length: length, reserveLastWord: true });
-                htmlObservable(html);
-            });
+        const html = markdownService.processMarkdown(markdown);
+        htmlObservable(html);
     }
 };
