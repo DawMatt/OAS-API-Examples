@@ -9,7 +9,7 @@ import { SearchQuery } from "../../../../../contracts/searchQuery";
 import { TagGroup } from "../../../../../models/tagGroup";
 import { RouteHelper } from "../../../../../routing/routeHelper";
 import { Tag } from "../../../../../models/tag";
-import { Utils } from "../../../../../utils";
+import { Api } from "../../../../../models/api";
 
 
 @RuntimeComponent({
@@ -31,10 +31,10 @@ export class OperationList {
     public readonly pattern: ko.Observable<string>;
     public readonly tags: ko.Observable<Tag[]>;
     public readonly pageNumber: ko.Observable<number>;
-    public readonly hasPrevPage: ko.Observable<boolean>;
-    public readonly hasNextPage: ko.Observable<boolean>;
-    public readonly hasPager: ko.Computed<boolean>;
+    public readonly totalPages: ko.Observable<number>;
     public readonly tagScope: ko.Computed<string>;
+    public readonly showUrlPath: ko.Observable<boolean>;
+    public readonly apiType: ko.Observable<string>;
 
     constructor(
         private readonly apiService: ApiService,
@@ -43,6 +43,12 @@ export class OperationList {
     ) {
         this.detailsPageUrl = ko.observable();
         this.allowSelection = ko.observable(false);
+        this.wrapText = ko.observable();
+
+        this.showUrlPath = ko.observable();
+        this.defaultShowUrlPath = ko.observable();
+        this.showToggleUrlPath = ko.observable();
+
         this.operations = ko.observableArray();
         this.operationGroups = ko.observableArray();
         this.selectedApiName = ko.observable();
@@ -53,17 +59,23 @@ export class OperationList {
         this.pattern = ko.observable();
         this.tags = ko.observable([]);
         this.pageNumber = ko.observable(1);
-        this.hasNextPage = ko.observable();
-        this.hasPrevPage = ko.observable();
-        this.hasPager = ko.computed(() => this.hasPrevPage() || this.hasNextPage());
-        this.tagScope = ko.computed(() =>
-            this.selectedApiName()
-                ? `apis/${this.selectedApiName()}`
-                : "");
+        this.totalPages = ko.observable(0);
+
+        this.tagScope = ko.computed(() => this.selectedApiName() ? `apis/${this.selectedApiName()}` : "");
+        this.apiType = ko.observable();
     }
 
     @Param()
     public allowSelection: ko.Observable<boolean>;
+
+    @Param()
+    public wrapText: ko.Observable<boolean>;
+
+    @Param()
+    public defaultShowUrlPath: ko.Observable<boolean>;
+
+    @Param()
+    public showToggleUrlPath: ko.Observable<boolean>;
 
     @Param()
     public defaultGroupByTagToEnabled: ko.Observable<boolean>;
@@ -80,6 +92,9 @@ export class OperationList {
         this.selectedOperationName(operationName);
 
         this.groupByTag(this.defaultGroupByTagToEnabled());
+        this.tags.subscribe(this.resetSearch);
+
+        this.showUrlPath(this.defaultShowUrlPath());
 
         if (this.selectedApiName()) {
             await this.loadOperations();
@@ -89,13 +104,13 @@ export class OperationList {
             .extend({ rateLimit: { timeout: Constants.defaultInputDelayMs, method: "notifyWhenChangesStop" } })
             .subscribe(this.resetSearch);
 
-        this.tags
-            .subscribe(this.resetSearch);
-
         this.groupByTag
             .subscribe(this.loadOperations);
 
         this.router.addRouteChangeListener(this.onRouteChange);
+
+        this.pageNumber
+            .subscribe(this.loadOperations);
     }
 
     private async onRouteChange(): Promise<void> {
@@ -115,6 +130,7 @@ export class OperationList {
     }
 
     public async loadOperations(): Promise<void> {
+
         if (this.groupByTag()) {
             this.operationGroups([]);
             this.searchRequest = { pattern: this.pattern(), tags: this.tags(), grouping: "tag" };
@@ -124,18 +140,25 @@ export class OperationList {
             this.searchRequest = { pattern: this.pattern(), tags: this.tags(), grouping: "none" };
         }
 
+        this.searchRequest.propertyName = this.showUrlPath() ? "urlTemplate" : undefined;
+
         try {
             this.working(true);
-
-            if (this.groupByTag()) {
-                await this.loadOfOperationsByTag();
-            }
-            else {
+            const apiType = await this.getApiType();
+            if (apiType === "websocket") {
                 await this.loadPageOfOperations();
-            }
-
-            if (this.allowSelection() && !this.selectedOperationName()) {
                 this.selectFirstOperation();
+            } else {
+                if (this.groupByTag()) {
+                    await this.loadOfOperationsByTag();
+                }
+                else {
+                    await this.loadPageOfOperations();
+                }
+
+                if (this.allowSelection() && !this.selectedOperationName()) {
+                    this.selectFirstOperation();
+                }
             }
         }
         catch (error) {
@@ -146,6 +169,18 @@ export class OperationList {
         }
     }
 
+    private async getApiType(): Promise<string> {
+        const apiName = this.selectedApiName();
+
+        if (!apiName) {
+            return;
+        }
+        const api = await this.apiService.getApi(`apis/${apiName}`);
+        this.apiType(api?.type);
+
+        return api?.type;
+    }
+
     private async loadOfOperationsByTag(): Promise<void> {
         this.searchRequest.skip = (this.pageNumber() - 1) * Constants.defaultPageSize;
 
@@ -153,9 +188,7 @@ export class OperationList {
         const operationGroups = pageOfOperationsByTag.value;
 
         this.operationGroups(operationGroups);
-
-        this.hasPrevPage(this.pageNumber() > 1);
-        this.hasNextPage(!!pageOfOperationsByTag.nextLink);
+        this.totalPages(Math.ceil(pageOfOperationsByTag.count / Constants.defaultPageSize));
     }
 
     private async loadPageOfOperations(): Promise<void> {
@@ -169,9 +202,7 @@ export class OperationList {
         const pageOfOperations = await this.apiService.getOperations(`apis/${apiName}`, this.searchRequest);
 
         this.operations(pageOfOperations.value);
-
-        this.hasPrevPage(this.pageNumber() > 1);
-        this.hasNextPage(!!pageOfOperations.nextLink);
+        this.totalPages(Math.ceil(pageOfOperations.count / Constants.defaultPageSize));
     }
 
     private selectFirstOperation(): void {
@@ -210,28 +241,6 @@ export class OperationList {
     public async resetSearch(): Promise<void> {
         this.pageNumber(1);
         this.loadOperations();
-    }
-
-    public prevPage(): void {
-        this.pageNumber(this.pageNumber() - 1);
-
-        if (this.groupByTag()) {
-            this.loadOfOperationsByTag();
-        }
-        else {
-            this.loadPageOfOperations();
-        }
-    }
-
-    public nextPage(): void {
-        this.pageNumber(this.pageNumber() + 1);
-
-        if (this.groupByTag()) {
-            this.loadOfOperationsByTag();
-        }
-        else {
-            this.loadPageOfOperations();
-        }
     }
 
     public async onTagsChange(tags: Tag[]): Promise<void> {

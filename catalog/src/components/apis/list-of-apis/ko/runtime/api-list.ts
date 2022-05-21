@@ -8,7 +8,6 @@ import { TagGroup } from "../../../../../models/tagGroup";
 import { SearchQuery } from "../../../../../contracts/searchQuery";
 import { RouteHelper } from "../../../../../routing/routeHelper";
 import { Tag } from "../../../../../models/tag";
-import { Utils } from "../../../../../utils";
 
 
 @RuntimeComponent({
@@ -24,11 +23,9 @@ export class ApiList {
     public readonly working: ko.Observable<boolean>;
     public readonly pattern: ko.Observable<string>;
     public readonly tags: ko.Observable<Tag[]>;
-    public readonly page: ko.Observable<number>;
-    public readonly hasPager: ko.Computed<boolean>;
-    public readonly hasPrevPage: ko.Observable<boolean>;
-    public readonly hasNextPage: ko.Observable<boolean>;
     public readonly groupByTag: ko.Observable<boolean>;
+    public readonly pageNumber: ko.Observable<number>;
+    public readonly totalPages: ko.Observable<number>;
 
     constructor(
         private readonly apiService: ApiService,
@@ -36,14 +33,13 @@ export class ApiList {
     ) {
         this.detailsPageUrl = ko.observable();
         this.allowSelection = ko.observable(false);
+        this.showApiType = ko.observable(true);
         this.apis = ko.observableArray([]);
         this.working = ko.observable();
         this.pattern = ko.observable();
         this.tags = ko.observable([]);
-        this.page = ko.observable(1);
-        this.hasPrevPage = ko.observable();
-        this.hasNextPage = ko.observable();
-        this.hasPager = ko.computed(() => this.hasPrevPage() || this.hasNextPage());
+        this.pageNumber = ko.observable(1);
+        this.totalPages = ko.observable(0);
         this.apiGroups = ko.observableArray();
         this.groupByTag = ko.observable(false);
         this.defaultGroupByTagToEnabled = ko.observable(false);
@@ -51,6 +47,9 @@ export class ApiList {
 
     @Param()
     public allowSelection: ko.Observable<boolean>;
+
+    @Param()
+    public showApiType: ko.Observable<boolean>;
 
     @Param()
     public defaultGroupByTagToEnabled: ko.Observable<boolean>;
@@ -61,6 +60,7 @@ export class ApiList {
     @OnMounted()
     public async initialize(): Promise<void> {
         this.groupByTag(this.defaultGroupByTagToEnabled());
+        this.tags.subscribe(this.resetSearch);
 
         await this.resetSearch();
 
@@ -68,18 +68,18 @@ export class ApiList {
             .extend({ rateLimit: { timeout: Constants.defaultInputDelayMs, method: "notifyWhenChangesStop" } })
             .subscribe(this.resetSearch);
 
-        this.tags
-            .subscribe(this.resetSearch);
-
         this.groupByTag
             .subscribe(this.resetSearch);
+
+        this.pageNumber
+            .subscribe(this.loadPageOfApis);
     }
 
     /**
      * Loads page of APIs.
      */
     public async loadPageOfApis(): Promise<void> {
-        const pageNumber = this.page() - 1;
+        const pageNumber = this.pageNumber() - 1;
 
         const query: SearchQuery = {
             pattern: this.pattern(),
@@ -88,29 +88,27 @@ export class ApiList {
             take: Constants.defaultPageSize
         };
 
-        let nextLink;
-
         try {
             this.working(true);
+
+            let totalItems: number;
 
             if (this.groupByTag()) {
                 const pageOfTagResources = await this.apiService.getApisByTags(query);
                 const apiGroups = pageOfTagResources.value;
 
                 this.apiGroups(apiGroups);
-
-                nextLink = pageOfTagResources.nextLink;
+                totalItems = pageOfTagResources.count;
             }
             else {
                 const pageOfApis = await this.apiService.getApis(query);
                 const apis = pageOfApis ? pageOfApis.value : [];
-                this.apis(apis);
 
-                nextLink = pageOfApis.nextLink;
+                this.apis(apis);
+                totalItems = pageOfApis.count;
             }
 
-            this.hasPrevPage(pageNumber > 0);
-            this.hasNextPage(!!nextLink);
+            this.totalPages(Math.ceil(totalItems / Constants.defaultPageSize));
         }
         catch (error) {
             throw new Error(`Unable to load APIs. Error: ${error.message}`);
@@ -124,18 +122,8 @@ export class ApiList {
         return this.routeHelper.getApiReferenceUrl(api.name, this.detailsPageUrl());
     }
 
-    public prevPage(): void {
-        this.page(this.page() - 1);
-        this.loadPageOfApis();
-    }
-
-    public nextPage(): void {
-        this.page(this.page() + 1);
-        this.loadPageOfApis();
-    }
-
     public async resetSearch(): Promise<void> {
-        this.page(1);
+        this.pageNumber(1);
         this.loadPageOfApis();
     }
 

@@ -1,22 +1,55 @@
-import { Utils } from "../utils";
-import { IAuthenticator, AccessToken } from "./../authentication";
-import { HttpHeader } from "@paperbits/common/http/httpHeader";
+import * as Constants from "./../constants";
+import { sanitizeUrl } from "@braintree/sanitize-url";
+import { AccessToken, IAuthenticator } from "./../authentication";
+
 
 export class DefaultAuthenticator implements IAuthenticator {
-    public async getAccessToken(): Promise<string> {
-        const accessToken = sessionStorage.getItem("accessToken");
-        
-        if (!accessToken && window.location.pathname.startsWith("/signin-sso")) {
+    private runSsoFlow(): Promise<void> {
+        return new Promise<void>(async () => {
             const url = new URL(location.href);
-            const queryParams = new URLSearchParams(url.search);
-            const tokenValue = queryParams.get("token");
-            const token = AccessToken.parse(`SharedAccessSignature ${tokenValue}`);
+            let tokenValue = url.searchParams.get("token");
+            let returnUrl = url.searchParams.get("returnUrl") || "/";
+            if (!tokenValue && url.hash.startsWith("#token=")) {
+                const hashParams = new URLSearchParams(url.hash.replace(/#/g, "?"));
+                tokenValue = hashParams.get("token");
+                returnUrl = hashParams.get("returnUrl") || returnUrl || "/";
+            }
+            const tokenString = `SharedAccessSignature ${tokenValue}`;
+            const token = AccessToken.parse(tokenString);
+
             await this.setAccessToken(token);
-            
-            const returnUrl = queryParams.get("returnUrl") || "/";
-            window.location.assign(returnUrl);
+
+            // wait for redirect to happen, deliberatly not resolving the promise
+            window.location.assign(sanitizeUrl(returnUrl));
+        });
+    }
+
+    public async getAccessToken(): Promise<AccessToken> {
+        if (location.pathname.startsWith("/signin-sso")) {
+            await this.runSsoFlow();
         }
-        return accessToken;
+
+        const storedToken = sessionStorage.getItem("accessToken");
+
+        if (storedToken) {
+            const accessToken = AccessToken.parse(storedToken);
+
+            if (!accessToken.isExpired()) {
+                return accessToken;
+            }
+            else {
+                this.clearAccessToken();
+                alert("You session expired. Please sign-in again.");
+                window.location.assign(Constants.pageUrlSignIn);
+            }
+        }
+
+        return null;
+    }
+
+    public async getAccessTokenAsString(): Promise<string> {
+        const accessToken = await this.getAccessToken();
+        return accessToken?.toString();
     }
 
     public async setAccessToken(accessToken: AccessToken): Promise<void> {
@@ -28,30 +61,12 @@ export class DefaultAuthenticator implements IAuthenticator {
         sessionStorage.setItem("accessToken", accessToken.toString());
     }
 
-    public async refreshAccessTokenFromHeader(responseHeaders: HttpHeader[] = []): Promise<string> {
-        const accessTokenHeader = responseHeaders.find(x => x.name.toLowerCase() === "ocp-apim-sas-token");
-
-        if (accessTokenHeader?.value) {
-            const accessToken = AccessToken.parse(accessTokenHeader.value);
-            const accessTokenString = accessToken.toString();
-
-            const current = sessionStorage.getItem("accessToken");
-
-            if (current !== accessTokenString) {
-                sessionStorage.setItem("accessToken", accessTokenString);
-                return accessTokenString;
-            }
-        }
-
-        return undefined;
-    }
-
     public clearAccessToken(): void {
         sessionStorage.removeItem("accessToken");
     }
 
     public async isAuthenticated(): Promise<boolean> {
-        const accessToken = await this.getAccessToken();
+        const accessToken = await this.getAccessTokenAsString();
 
         if (!accessToken) {
             return false;

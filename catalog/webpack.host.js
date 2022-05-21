@@ -1,6 +1,5 @@
 const path = require("path");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
-const CleanWebpackPlugin = require("clean-webpack-plugin");
 
 
 const apiConfig = {
@@ -21,13 +20,14 @@ const apiConfig = {
         rules: [
             {
                 test: /\.tsx?$/,
-                loader: "awesome-typescript-loader"
+                loader: "ts-loader",
+                options: {
+                    allowTsInNodeModules: true
+                }
             }
         ]
     },
     plugins: [
-        // new CleanWebpackPlugin(),
-        // new webpack.HotModuleReplacementPlugin(),
         new CopyWebpackPlugin({
             patterns: [
                 { from: `./data`, to: `./data` },

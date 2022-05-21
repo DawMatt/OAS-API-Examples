@@ -1,7 +1,8 @@
 import { VersionSet } from "./versionSet";
-import { ApiContract, SubscriptionKeyParameterName } from "../contracts/api";
+import { ApiContract, ContactDetails, LicenseDetails, SubscriptionKeyParameterName } from "../contracts/api";
 import { Utils } from "../utils";
 import { AuthenticationSettings } from "../contracts/authenticationSettings";
+import { TypeOfApi } from "../constants";
 
 /**
  * API model.
@@ -86,6 +87,11 @@ export class Api {
      * Determines type of API, e.g. "soap".
      */
     public type?: string;
+    
+    /**
+     * Determines type name of API to display in UI, e.g. "Soap".
+     */
+    public typeName?: string;
 
     /**
      * Information about associated authorization servers (OAuth 2 or OpenID Connect).
@@ -97,7 +103,20 @@ export class Api {
      */
     public subscriptionRequired: boolean;
 
-    public thumbnail: string;
+    /**
+     * Contact information.
+     */
+    public contact?: ContactDetails;
+
+    /**
+     * Name of the license and a URL to the license description.
+     */
+    public license?: LicenseDetails;
+
+    /**
+     * Link to the page that describes the terms of service.
+     */
+    public termsOfServiceUrl?: string;
 
     constructor(contract?: ApiContract) {
         if (contract.id) {
@@ -106,12 +125,11 @@ export class Api {
 
         this.name = contract.name;
         this.displayName = contract.properties.displayName;
-        this.thumbnail = contract.properties.thumbnail;
         this.versionedDisplayName = contract.properties.displayName;
         this.serviceUrl = contract.properties.serviceUrl;
         this.protocols = contract.properties.protocols;
         this.description = contract.properties.description;
-        this.path = contract.properties.path || "";
+        this.path = contract.properties.path;
         this.versionedPath = this.path;
         this.apiVersion = contract.properties.apiVersion;
         this.apiRevision = contract.properties.apiRevision;
@@ -119,6 +137,28 @@ export class Api {
         this.type = contract.properties.type;
         this.authenticationSettings = contract.properties.authenticationSettings;
         this.subscriptionRequired = contract.properties.subscriptionRequired;
+        this.contact = contract.properties.contact;
+        this.license = contract.properties.license;
+        this.termsOfServiceUrl = contract.properties.termsOfServiceUrl;
+
+        if(contract.properties.type) {
+            switch(contract.properties.type) {
+                case TypeOfApi.soap:
+                    this.typeName = "SOAP";
+                    break;
+                case TypeOfApi.webSocket:
+                    this.typeName = "WebSocket";
+                    break;
+                case TypeOfApi.graphQL:
+                    this.typeName = "GraphQL";
+                    break;
+                default:
+                    this.typeName = "REST";
+                    break;
+            }
+        } else {
+            this.typeName = "REST";
+        }
 
         if (contract.properties.apiVersionSet) {
             const nestedVersionSet = contract.properties.apiVersionSet;

@@ -12,11 +12,31 @@ export class RouteHelper {
         return params.get(name);
     }
 
+    public setHashParameter(name: string, value: string): void {
+        const route = this.router.getCurrentRoute();
+        const params = new URLSearchParams(route.hash ? `?${route.hash}` : "");
+
+        if(value) {
+            params.set(name, value);
+        } else {
+            params.delete(name);
+        }
+        
+        this.router.navigateTo(`#${params.toString()}`);
+    }
+
     /**
      * Returns ARM resource name of the API specified in hash parameter of the current route, e.g. "httpbin".
      */
     public getApiName(): string {
         return this.getHashParameter("api");
+    }
+
+    /**
+     * Returns ARM resource name of the API specified in hash parameter of the current route, e.g. "httpbin".
+     */
+    public getTags(): string {
+        return this.getHashParameter("tags");
     }
 
     /**
@@ -31,6 +51,20 @@ export class RouteHelper {
      */
     public getProductName(): string {
         return this.getHashParameter("product");
+    }
+
+    /**
+     * Returns ARM resource name of the graph type specified in hash parameter of the current route for graphQL APIs, e.g. "query".
+     */
+    public getGraphType(): string {
+        return this.getHashParameter("type");
+    }
+
+    /**
+     * Returns ARM resource name of the graph specified in hash parameter of the current route for graphQL APIs, e.g. "users".
+     */
+    public getGraphName(): string {
+        return this.getHashParameter("graph");
     }
 
     /**
@@ -76,6 +110,52 @@ export class RouteHelper {
         }
 
         return `${path}#api=${apiName}&operation=${operationName}`;
+    }
+
+    /**
+     * Returns URL of graph details page depending on current route.
+     * @param apiName ARM resource name of the API.
+     * @param type ARM resource graph type.
+     * @param graph ARM resource name of the graph.
+     * @param detailsPageUrl Relative URL of operation details page.
+     */
+     public getGraphReferenceUrl(apiName: string, type: string, graph: string, detailsPageUrl: string = ""): string {
+
+        let path = "";
+        const currentPath = this.router.getPath();
+
+        if (currentPath !== detailsPageUrl) {
+            path = detailsPageUrl;
+        }
+
+        return `${path}#api=${apiName}&type=${type}&graph=${graph}`;
+    }
+
+    /**
+     * Returns URL of graph details page depending on current route.
+     * @param apiName ARM resource name of the API.
+     * @param type ARM resource graph type.
+     * @param graph ARM resource name of the graph.
+     * @param definition Name of the definition.
+     */
+     public getGraphDefinitionReferenceId(apiName: string, type: string, graph: string, definition: string): string {
+        if (!apiName) {
+            throw new Error(`Parameter "apiName" not specified.`);
+        }
+
+        if (!type) {
+            throw new Error(`Parameter "type" not specified.`);
+        }
+
+        if (!graph) {
+            throw new Error(`Parameter "graphName" not specified.`);
+        }
+
+        if (!definition) {
+            throw new Error(`Parameter "definition" not specified.`);
+        }
+
+        return `api=${apiName}&type=${type}&graph=${graph}&definition=${definition}`;
     }
 
     /**

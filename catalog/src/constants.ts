@@ -5,11 +5,10 @@ export const dataPathSettingName = "dataFilesPath";
 export const mediaPathSettingName = "dataFilesPath";
 export const openapiSpecsPathSettingName = "openapiSpecsPath";
 
-
 /**
  * APIM service SKU names.
  */
-export enum ServiceSkuName {
+ export enum ServiceSkuName {
     Developer = "Developer",
     Basic = "Basic",
     Standard = "Standard",
@@ -21,8 +20,20 @@ export enum ServiceSkuName {
  * Types of API.
  */
 export enum TypeOfApi {
+    webSocket = "websocket",
     soap = "soap",
-    http = "http"
+    http = "http",
+    graphQL = "graphql"
+}
+
+/**
+ * Types of body format.
+ */
+export enum RequestBodyType {
+    raw = "raw",
+    string = "string",
+    binary = "binary",
+    form = "form"
 }
 
 /**
@@ -39,20 +50,30 @@ export enum AadEndpoints {
     legacy = "login.windows.net"
 }
 
-export const rootURL = "" // Add prefix here if required
+/**
+ * Types of direction (e.g. for sorting of elements in a table)
+ */
+export enum Direction {
+    asc = "asc",
+    desc = "desc"
+}
+
+export const defaultAadTenantName = "common";
+
+export const closeAccount = "close-account";
 export const hashSignOut = "signout";
-export const pageUrlSignIn = rootURL + "/signin";
-export const pageUrlSignInSso = rootURL + "/signinsso";
-export const pageUrlSignUp = rootURL + "/signup";
-export const pageUrlSignUpOAuth = rootURL + "/signup-oauth";
-export const pageUrlProfile = rootURL + "/profile";
-export const pageUrlHome = rootURL + "/";
-export const pageUrl404 = rootURL + "/404";
-export const pageUrl500 = rootURL + "/500";
-export const pageUrlChangePassword = rootURL + "/change-password";
-export const pageUrlConfirmPassword = rootURL + "/confirm-password";
-export const pageUrlResetPassword = rootURL + "/reset-password";
-export const pageUrlReference = rootURL + "/api-details";
+export const pageUrlSignIn = "/signin";
+export const pageUrlSignInSso = "/signinsso";
+export const pageUrlSignUp = "/signup";
+export const pageUrlSignUpOAuth = "/signup-oauth";
+export const pageUrlProfile = "/profile";
+export const pageUrlHome = "/";
+export const pageUrl404 = "/404";
+export const pageUrl500 = "/500";
+export const pageUrlChangePassword = "/change-password";
+export const pageUrlConfirmPassword = "/confirm-password";
+export const pageUrlResetPassword = "/reset-password";
+export const pageUrlReference = "/api-details";
 
 /**
  * Permalinks pointing to resources that cannot be added, modified or modified.
@@ -69,16 +90,26 @@ export const reservedPermalinks = [
     pageUrlChangePassword,
     pageUrlConfirmPassword,
     hashSignOut,
-    rootURL + "/confirm-v2/identities/basic/signup",
-    rootURL + "/confirm/invitation",
-    rootURL + "/confirm-v2/password",
-    rootURL + "/captcha"
+    "/confirm-v2/identities/basic/signup",
+    "/confirm/invitation",
+    "/confirm-v2/password",
+    "/captcha"
 ];
 
 /**
- * Maximum number of items to show in a paginated view.
+ * Maximum number of items to request from Managament API.
  */
 export const defaultPageSize = 50;
+
+/**
+ * Default value of first page in a paginated view.
+ */
+ export const firstPage = 1;
+
+/**
+ * Maximum number of pages to show in a paginated view.
+ */
+export const showMaximumPages = 3;
 
 /**
  * Default input delay before changes take effect.
@@ -91,12 +122,108 @@ export const defaultInputDelayMs = 600;
 export const AppType = "developerPortal";
 
 /**
+ * HTML Editor Settings - HTML injection widget editor
+ */
+ export const HtmlEditorSettings = {
+    id: "htmlEditor",
+    config: {
+        language: "html",
+        readOnly: false,
+
+        lineHeight: 17,
+        automaticLayout: true,
+        minimap: {
+            enabled: false
+        },
+    }
+ };
+
+/**
+ * Query Editor Settings - GraphQL Console
+ */
+export const QueryEditorSettings = {
+    id: "queryEditor",
+    config: {
+        language: "graphqlQuery",
+        readOnly: false,
+    }
+};
+
+/**
+ * Variables Editor Settings - GraphQL Console
+ */
+export const VariablesEditorSettings = {
+    id: "variablesEditor",
+    config: {
+        language: "json",
+        readOnly: false,
+    }
+};
+
+/**
+ * Response Settings - GraphQL Console
+ */
+export const ResponseSettings = {
+    id: "responseEditor",
+    config: {
+        language: "json",
+        readOnly: true,
+    }
+};
+
+ /**
+ * Graphql types
+ */
+  export enum GraphqlTypes {
+    query = "query",
+    mutation = "mutation",
+    subscription = "subscription",
+}
+
+ /**
+ * Graphql types for documentation
+ */
+export enum GraphqlTypesForDocumentation {
+    query = "Query",
+    mutation = "Mutation",
+    subscription = "Subscription",
+    objectType = "Object Type",
+    inputObjectType = "Input Object Type",
+    enumType = "Enum Type",
+    scalarType = "Scalar Type",
+    unionType = "Union Type",
+    interfaceType = "Interface Type"
+}
+
+export enum GraphqlCustomFieldNames {
+    selected = "isSelectedForDoc",
+    type = "collectionTypeForDoc",
+}
+
+export enum GraphqlDefaultScalarTypes {
+    int = "Int",
+    float = "Float",
+    string = "String",
+    boolean = "Boolean",
+    id = "ID"
+}
+
+export enum GraphqlFieldTypes {
+    args = "args",
+    fields = "_fields",
+    values = "_values",
+    types = "_types"
+}
+
+/**
  * Known setting names.
  */
 export enum SettingNames {
     backendUrl = "backendUrl",
     managementApiUrl = "managementApiUrl",
-    managementApiAccessToken = "managementApiAccessToken"
+    managementApiAccessToken = "managementApiAccessToken",
+    aadClientConfig = "aad",
+    aadB2CClientConfig = "aadB2C"
 }
 
 /**
@@ -120,10 +247,16 @@ export enum GrantTypes {
      * The Client Credentials grant type is used by clients to obtain an access token outside of
      * the context of a user.
      */
-    clientCredentials = "client_credentials"
+    clientCredentials = "client_credentials",
+
+    /**
+     * The Resource owner password grant type is used to exchange a username and password for an access
+     * token directly. 
+     */
+    password = "password"
 }
 
-export const managementApiVersion = "2019-12-01";
+export const managementApiVersion = "2021-04-01-preview";
 
 /**
  * Developer portal type (self-hosted or managed).
@@ -134,3 +267,10 @@ export const developerPortalType = "self-hosted-portal";
  * Header name to track developer portal type.
  */
 export const portalHeaderName = "x-ms-apim-client";
+
+export const releaseNameFormat = "YYYYMMDDHHmm";
+
+export const genericHttpRequestError = "Server error. Unable to send request. Please try again later.";
+
+export const oauthSessionKey = "oauthSession";
+export const reservedCharTuplesForOData: [string, string][] = [["'", "''"]];

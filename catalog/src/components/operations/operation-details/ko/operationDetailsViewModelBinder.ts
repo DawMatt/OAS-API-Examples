@@ -1,8 +1,10 @@
 import { ViewModelBinder } from "@paperbits/common/widgets";
-import { EventManager } from "@paperbits/common/events";
+import { EventManager, Events } from "@paperbits/common/events";
 import { OperationDetailsViewModel } from "./operationDetailsViewModel";
 import { OperationDetailsModel } from "../operationDetailsModel";
 import { Bag } from "@paperbits/common";
+import { ComponentFlow } from "@paperbits/common/editing";
+import { OperationDetailsHandlers } from "../operationDetailsHandlers";
 
 
 export class OperationDetailsViewModelBinder implements ViewModelBinder<OperationDetailsModel, OperationDetailsViewModel> {
@@ -13,14 +15,15 @@ export class OperationDetailsViewModelBinder implements ViewModelBinder<Operatio
             viewModel = new OperationDetailsViewModel();
 
             viewModel["widgetBinding"] = {
-                displayName: "Operation: details",
+                displayName: "Operation: Details",
                 model: model,
                 draggable: true,
-                flow: "block",
+                handler: OperationDetailsHandlers,
+                flow: ComponentFlow.Block,
                 editor: "operation-details-editor",
                 applyChanges: async (updatedModel: OperationDetailsModel) => {
                     await this.modelToViewModel(updatedModel, viewModel, bindingContext);
-                    this.eventManager.dispatchEvent("onContentUpdate");
+                    this.eventManager.dispatchEvent(Events.ContentUpdate);
                 }
             };
         }
@@ -28,8 +31,8 @@ export class OperationDetailsViewModelBinder implements ViewModelBinder<Operatio
         const runtimeConfig = {
             enableConsole: model.enableConsole,
             enableScrollTo: model.enableScrollTo,
-            authorizationServers: model.authorizationServers,
-            defaultSchemaView: model.defaultSchemaView
+            defaultSchemaView: model.defaultSchemaView,
+            useCorsProxy: model.useCorsProxy
         };
 
         viewModel.config(JSON.stringify(runtimeConfig));
